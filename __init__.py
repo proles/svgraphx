@@ -64,13 +64,13 @@ def draw_grid(grid=[]):
       
   return
 
-def draw_sine(amplitude=1, period=180, step=1, xzero=0, yzero=0,palette=[],variation=False):
+def draw_sine(amplitude=1, period=180, factor=1, step=1, xzero=0, yzero=0,palette=[],variation=False):
   """ creates discrete sine wave with given amplitude,
   half-period(degrees), and increment steps
   """
-  for angle in range(step,period,step):
+  for angle in range(step,int(period/factor),step):
     x = angle + xzero
-    h = amplitude * math.sin(math.radians(angle))
+    h = amplitude * math.sin(factor*math.radians(angle))
     if len(palette):
       _ctx.fill(random.choice(palette))
     if variation:

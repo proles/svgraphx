@@ -6,7 +6,7 @@ Created by Andres Bastidas on 2011-11-07.
 
 def bounds(paths=[]):
   """ Returns (x,y), (width, height) bounds for a group of paths
-	- originally provided as sample at
+	- originally provided as sample at http://nodebox.net/code/index.php/SVG
   """
   if len(paths) == 0:
     return (0, 0), (0, 0)

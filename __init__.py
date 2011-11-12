@@ -7,6 +7,15 @@ import math
 import random
 from nodebox.graphics import Context
 _ctx = Context
+_palette = []
+SINE_PERIOD_DEG = 180.0
+
+def set_palette(palette):
+  """ set color palette
+  """
+  global _palette
+  _palette = palette
+  return
 
 def bounds(paths=[]):
   """ Returns (x,y), (width, height) bounds for a group of paths
@@ -63,20 +72,43 @@ def draw_grid(grid=[]):
       _ctx.pop()
       
   return
+  
+def get_nsine_width(width):
+  """ return normalized theta coefficient based on canvas width for standard period
+  """
+  global SINE_PERIOD_DEG
+  return 1 / (_ctx.WIDTH * width / SINE_PERIOD_DEG)
 
-def draw_sine(amplitude=1, period=180, factor=1, step=1, xzero=0, yzero=0,palette=[],variation=False):
+def get_nyzero(factor):
+  """ return y-axis location
+  """
+  if not factor:
+    return _ctx.HEIGHT
+  return int(_ctx.HEIGHT*factor)
+
+def get_namplitude(factor):
+  """ return normalized amplitude based on canvas height
+  """
+  if not factor:
+    return _ctx.HEIGHT
+  return int(_ctx.HEIGHT * factor)
+
+def draw_sine(amplitude=0, width=1, step=1, xzero=0, yzero=0, variation=True):
   """ creates discrete sine wave with given amplitude,
   half-period(degrees), and increment steps
   """
-  for angle in range(step,int(period/factor),step):
+  global _palette
+  yzero = get_nyzero(yzero)
+  atheta = get_nsine_width(width)
+  amplitude = get_namplitude(amplitude)
+  for angle in range(step,int(SINE_PERIOD_DEG/atheta),step):
     x = angle + xzero
-    h = amplitude * math.sin(factor*math.radians(angle))
-    if len(palette):
-      _ctx.fill(random.choice(palette))
+    h = amplitude * math.sin(atheta*math.radians(angle))
+    _ctx.fill(random.choice(_palette))
     if variation:
       h = h * random.choice(range(80,100,5))/100
     y = yzero - h
     _ctx.rect(x, y, step, h)
-    print h
   
   return
+

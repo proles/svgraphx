@@ -8,7 +8,14 @@ import random
 from nodebox.graphics import Context
 _ctx = Context
 _palette = []
+_tilt_range = []
+_round_range = []
 SINE_PERIOD_DEG = 180.0
+ATAN_PERIOD_DEG = 90.0
+
+def init():
+  set_tilt_range()
+  set_round_range()
 
 def set_palette(palette):
   """ set color palette
@@ -16,6 +23,24 @@ def set_palette(palette):
   global _palette
   _palette = palette
   return
+  
+def set_tilt_range(tilt_range=range(-2,2,1)):
+  """ set tilt range
+  """
+  global _tilt_range
+  _tilt_range = tilt_range
+  return
+
+def set_round_range(round_range=range(0,5,1)):
+  global _round_range
+  _round_range = make_fractional(round_range)
+  return
+
+def make_fractional(contents, denominator = 10.0):
+  """
+  helper function to get franctional ranges
+  """
+  return map(lambda x: x/denominator, contents)
 
 def bounds(paths=[]):
   """ Returns (x,y), (width, height) bounds for a group of paths
@@ -40,7 +65,7 @@ def zero_translate(paths=[]):
   """ return offset to get path corner to (0,0)
   """
   (x,y), (w,h) = bounds(paths)
-  return (-x,-y)
+  return (-x,-y), (w,h)
 
 def make_grid(paths=[], xoffset=0, yoffset=0, xcount=1, ycount=1, xpad=0, ypad=0):
   """ creates a grid using the provided path
@@ -79,6 +104,12 @@ def get_nsine_width(width):
   global SINE_PERIOD_DEG
   return 1 / (_ctx.WIDTH * width / SINE_PERIOD_DEG)
 
+def get_natan_width(width):
+  """ return normalized theta coefficient based on canvas width for standard period
+  """
+  global ATAN_PERIOD_DEG
+  return 1 / (_ctx.WIDTH * width / ATAN_PERIOD_DEG)
+
 def get_nyzero(factor):
   """ return y-axis location
   """
@@ -93,14 +124,19 @@ def get_namplitude(factor):
     return _ctx.HEIGHT
   return int(_ctx.HEIGHT * factor)
 
-def draw_sine(amplitude=0, width=1, step=1, xzero=0, yzero=0, variation=True):
+def draw_sine(amplitude=0, width=1, step=1, xzero=0, yzero=0, variation=True,tilt=False,roundness=True):
   """ creates discrete sine wave with given amplitude,
   half-period(degrees), and increment steps
   """
   global _palette
+  global _tilt_range
+  global _round_range
   yzero = get_nyzero(yzero)
   atheta = get_nsine_width(width)
   amplitude = get_namplitude(amplitude)
+  _ctx.push()
+  if tilt:
+    _ctx.rotate(random.choice(_tilt_range))
   for angle in range(step,int(SINE_PERIOD_DEG/atheta),step):
     x = angle + xzero
     h = amplitude * math.sin(atheta*math.radians(angle))
@@ -108,7 +144,55 @@ def draw_sine(amplitude=0, width=1, step=1, xzero=0, yzero=0, variation=True):
     if variation:
       h = h * random.choice(range(80,100,5))/100
     y = yzero - h
-    _ctx.rect(x, y, step, h)
-  
+    if roundness:
+      radius = random.choice(_round_range)
+    _ctx.rect(x, y, step, h, radius)
+  _ctx.pop()
   return
 
+def plane_path(amplitude=1, width=1, xzero=0, yzero=0, endstep=100,plane=None):
+  """ draw plane paths using log()
+  """
+  yzero = get_nyzero(yzero)
+  xzero = xzero * _ctx.WIDTH
+  width = _ctx.WIDTH * width
+  amplitude = amplitude * _ctx.HEIGHT
+  #p1
+  p1a = random.choice(make_fractional(range(1,3)))
+  p1x = width * p1a + xzero
+  p1y = _ctx.HEIGHT - amplitude * math.log(p1x) / math.log(_ctx.WIDTH)
+  #p2
+  p2a = random.choice(make_fractional(range(3,7)))
+  p2x = width * p2a + xzero
+  p2y = _ctx.HEIGHT - amplitude * math.log(p2x) / math.log(_ctx.WIDTH)
+  
+  print 'width: ' + str(width)
+  print 'p1a: ' + str(p1a)
+  print 'p1x: ' + str(p1x)
+  print 'p1y: ' + str(p1y)
+  print 'p2a: ' + str(p2a)
+  print 'p2x: ' + str(p2x)
+  print 'p2y: ' + str(p2y)
+
+  _ctx.nofill()
+  _ctx.beginpath(xzero, yzero)
+  _ctx.curveto(p1x, p1y, p2x, p2y, width, p2y)
+  _ctx.endpath()
+  
+  if plane:
+    _ctx.push()
+    plane_reset = zero_translate(plane)
+    _ctx.translate(plane_reset[0][0],plane_reset[0][1])
+    _ctx.translate(width,p2y-plane_reset[1][1]*0.6)
+    _ctx.rotate(math.degrees(math.atan((p2y-p1y)/(p2x-p1x)))-15)
+    for path in plane:
+      _ctx.drawpath(path.copy())
+    _ctx.pop()
+
+  return
+  
+def draw_globe(x,y,w,h):
+  """ draw globe with params as fraction of canvas HEIGHT, WIDTH
+  """
+  _ctx.oval(x*_ctx.WIDTH, y*_ctx.HEIGHT, w*_ctx.WIDTH, h*_ctx.HEIGHT, True)
+  return

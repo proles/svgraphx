@@ -133,14 +133,16 @@ def draw_sine(amplitude=0, width=1, step=1, xzero=0, yzero=0, variation=True,til
   global _round_range
   yzero = get_nyzero(yzero)
   atheta = get_nsine_width(width)
-  amplitude = get_namplitude(amplitude)
+  namplitude = get_namplitude(amplitude)
   _ctx.push()
   if tilt:
     _ctx.rotate(random.choice(_tilt_range))
   for angle in range(step,int(SINE_PERIOD_DEG/atheta),step):
     x = angle + xzero
-    h = amplitude * math.sin(atheta*math.radians(angle))
-    _ctx.fill(random.choice(_palette))
+    h = namplitude * math.sin(atheta*math.radians(angle))
+    clr = random.choice(_palette)
+    clr.a = 1.0 - amplitude
+    _ctx.fill(_ctx.color(clr.r, clr.g, clr.b, clr.a))
     if variation:
       h = h * random.choice(range(80,100,5))/100
     y = yzero - h
@@ -150,7 +152,7 @@ def draw_sine(amplitude=0, width=1, step=1, xzero=0, yzero=0, variation=True,til
   _ctx.pop()
   return
 
-def plane_path(amplitude=1, width=1, xzero=0, yzero=0, endstep=100,plane=None):
+def plane_path(amplitude=1, scale=1, width=1, xzero=0, yzero=0, endstep=100,plane=None,clr=None):
   """ draw plane paths using log()
   """
   yzero = get_nyzero(yzero)
@@ -160,11 +162,11 @@ def plane_path(amplitude=1, width=1, xzero=0, yzero=0, endstep=100,plane=None):
   #p1
   p1a = random.choice(make_fractional(range(1,3)))
   p1x = width * p1a + xzero
-  p1y = _ctx.HEIGHT - amplitude * math.log(p1x) / math.log(_ctx.WIDTH)
+  p1y = _ctx.HEIGHT - amplitude * math.log(p1x) / math.log(width)
   #p2
   p2a = random.choice(make_fractional(range(3,7)))
   p2x = width * p2a + xzero
-  p2y = _ctx.HEIGHT - amplitude * math.log(p2x) / math.log(_ctx.WIDTH)
+  p2y = _ctx.HEIGHT - amplitude * math.log(p2x) / math.log(width)
   
   print 'width: ' + str(width)
   print 'p1a: ' + str(p1a)
@@ -181,18 +183,39 @@ def plane_path(amplitude=1, width=1, xzero=0, yzero=0, endstep=100,plane=None):
   
   if plane:
     _ctx.push()
-    plane_reset = zero_translate(plane)
-    _ctx.translate(plane_reset[0][0],plane_reset[0][1])
-    _ctx.translate(width,p2y-plane_reset[1][1]*0.6)
+    (resetx, resety), (w, h) = zero_translate(plane)
+    if clr:
+      _ctx.fill(clr)
+    _ctx.translate(resetx,resety)
+    _ctx.translate(width,p2y-h*0.6)
     _ctx.rotate(math.degrees(math.atan((p2y-p1y)/(p2x-p1x)))-15)
+    _ctx.scale(scale)
     for path in plane:
       _ctx.drawpath(path.copy())
     _ctx.pop()
 
   return
-  
-def draw_globe(x,y,w,h):
+
+def draw_clouds():
+  """ draw clouds using union sample from 
+  http://nodebox.net/code/index.php/Compound_paths
+  """
+  compound = None
+  for i in range(50):
+      r = random.choice(range(250))
+      path = _ctx.oval(random.choice(range(_ctx.WIDTH)), random.choice(range(_ctx.HEIGHT)), r, r, draw=False)
+      if not compound:
+          compound = path
+      compound = compound.union(path)
+  _ctx.drawpath(compound)
+  return
+
+def draw_globe(x,y,w,h,a=1.0):
   """ draw globe with params as fraction of canvas HEIGHT, WIDTH
   """
+  global _palette
+  clr = random.choice(_palette)
+  clr.a = a
+  _ctx.fill(_ctx.color(clr.r, clr.g, clr.b, clr.a))
   _ctx.oval(x*_ctx.WIDTH, y*_ctx.HEIGHT, w*_ctx.WIDTH, h*_ctx.HEIGHT, True)
   return

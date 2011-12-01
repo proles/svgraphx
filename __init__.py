@@ -202,7 +202,7 @@ def draw_clouds():
   """
   compound = None
   for i in range(50):
-      r = random.choice(range(250))
+      r = random.choice(range(350))
       path = _ctx.oval(random.choice(range(_ctx.WIDTH)), random.choice(range(_ctx.HEIGHT)), r, r, draw=False)
       if not compound:
           compound = path
